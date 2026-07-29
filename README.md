@@ -154,7 +154,10 @@ Each supports `GET` (list/retrieve), `POST`, `PUT/PATCH`, `DELETE`, and:
 
 ## 🐳 Deploy to Raspberry Pi (Docker)
 
-Use **64-bit Raspberry Pi OS**.
+Use **64-bit Raspberry Pi OS**. Host ports: **Django 8002**, **Postgres 5433**
+(chosen to avoid clashing with other containers). The public site is served over
+HTTPS at **https://mdm.cameron-dietz.com** via a Cloudflare Tunnel — no router
+ports are opened.
 
 1. Copy this project to the Pi.
 2. Create the production env file and edit it:
@@ -162,21 +165,29 @@ Use **64-bit Raspberry Pi OS**.
    cp .env.example .env
    ```
    Set at minimum: `DJANGO_SECRET_KEY` (generate a fresh one), `DJANGO_DEBUG=false`,
-   `DJANGO_ALLOWED_HOSTS` (the Pi's hostname/IP), `POSTGRES_PASSWORD`,
-   `MDM_BASE_URI`, and (if behind a domain/HTTPS) `DJANGO_CSRF_TRUSTED_ORIGINS`.
-3. Build and start the stack (Postgres + app). Migrations and `collectstatic`
-   run automatically on startup:
+   `DJANGO_ALLOWED_HOSTS=mdm.cameron-dietz.com,<pi-lan-ip>`, `POSTGRES_PASSWORD`,
+   `MDM_BASE_URI=https://mdm.cameron-dietz.com`,
+   `DJANGO_CSRF_TRUSTED_ORIGINS=https://mdm.cameron-dietz.com`, and
+   `CLOUDFLARE_TUNNEL_TOKEN` (see step 3).
+3. **One-time Cloudflare Tunnel setup** (Zero Trust dashboard → Networks → Tunnels):
+   - Create a tunnel; copy its **token** into `.env` as `CLOUDFLARE_TUNNEL_TOKEN`.
+   - Add a **public hostname**: `mdm.cameron-dietz.com` → service **`http://web:8000`**.
+     (Cloudflare creates the DNS record for the domain automatically.)
+4. Build and start the full production stack (Postgres + app + tunnel). Migrations
+   and `collectstatic` run automatically on startup:
    ```bash
-   docker compose up -d --build
+   docker compose --profile production up -d --build
    ```
-4. Create your admin user:
+5. Create your admin user:
    ```bash
    docker compose exec web python manage.py createsuperuser
    ```
-5. Open `http://<pi-ip>:8000/`.
+6. Open **https://mdm.cameron-dietz.com** (or `http://<pi-ip>:8002/` on the LAN).
 
-Static files are served by WhiteNoise (no nginx needed). Put a reverse proxy /
-TLS terminator in front later if you expose it beyond your LAN.
+Static files are served by WhiteNoise; TLS is terminated at Cloudflare's edge, and
+the app trusts the `X-Forwarded-Proto` header — so keep `DJANGO_SECURE_SSL_REDIRECT=false`
+to avoid redirect loops. To run the stack **without** the tunnel (e.g. LAN test),
+omit the profile: `docker compose up -d --build`.
 
 ---
 

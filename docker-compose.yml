@@ -1,6 +1,9 @@
-# Two-container stack: PostgreSQL + the Django app (Gunicorn, static via WhiteNoise).
-# Dev on Windows:  docker compose up -d db      (just Postgres; run Django via runserver)
-# Deploy on the Pi: docker compose up -d --build (full stack)
+# Stack: PostgreSQL + the Django app (Gunicorn, static via WhiteNoise) + an optional
+# Cloudflare Tunnel for production. Host ports: Django 8002, Postgres 5433.
+#
+#   Dev DB only (run Django via runserver):  docker compose up -d db
+#   Full stack, no tunnel:                    docker compose up -d --build
+#   Production (adds Cloudflare Tunnel):      docker compose --profile production up -d --build
 
 services:
   db:
@@ -13,7 +16,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
-      - "5432:5432"   # published so a host-side `runserver` can reach it in dev
+      - "5433:5432"   # host 5433 -> container 5432 (avoids clashing with your other Postgres)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mdm} -d ${POSTGRES_DB:-mdm}"]
       interval: 10s
@@ -25,14 +28,30 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      # DB name/user/password/port come from .env (env_file above); only the host
-      # differs inside the network — point the app at the `db` service, not localhost.
+      # Inside the compose network the DB is reachable as `db` on its internal port
+      # 5432 (NOT the host-published 5433). These override the dev values from .env.
       POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
     depends_on:
       db:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "8002:8000"   # host 8002 -> gunicorn 8000
+
+  # Production only: publish the app at https://mdm.cameron-dietz.com through a
+  # Cloudflare Tunnel — no inbound router/firewall ports required. Enable with the
+  # `production` profile. One-time setup: create a tunnel in the Cloudflare Zero
+  # Trust dashboard, add a public hostname `mdm.cameron-dietz.com` routed to
+  # `http://web:8000`, then put the tunnel token in .env as CLOUDFLARE_TUNNEL_TOKEN.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - web
+    profiles: ["production"]
 
 volumes:
   pgdata:
