@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ item.display_name }} · MDM{% endblock %}
+{% block content %}
+
+<div class="breadcrumb"><a href="{% url 'search:home' %}">Search</a> / Items</div>
+
+<div class="detail-header">
+  <span class="big-icon">📦</span>
+  <div>
+    <h1>{{ item.name }}{% if item.version %} <span class="muted">v{{ item.version }}</span>{% endif %}</h1>
+    <div class="subline">
+      {% if item.sku %}<span class="mono">SKU {{ item.sku }}</span>{% endif %}
+      {% if item.manufacturer %}<span class="muted">· by <a href="{% url 'search:organization_detail' item.manufacturer.pk %}">{{ item.manufacturer.name }}</a></span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a class="muted" href="{% url 'item-jsonld' item.pk %}">JSON-LD ↗</a>
+    <a class="btn" href="{% url 'admin:mdm_item_change' item.pk %}">Edit</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div>
+    <div class="section">
+      <h2>Overview</h2>
+      <div class="card"><dl class="kv">
+        <dt>Name</dt><dd>{{ item.name }}</dd>
+        {% if item.sku %}<dt>SKU</dt><dd class="mono">{{ item.sku }}</dd>{% endif %}
+        {% if item.version %}<dt>Version</dt><dd>{{ item.version }}</dd>{% endif %}
+        <dt>Manufacturer</dt><dd>{% if item.manufacturer %}<a href="{% url 'search:organization_detail' item.manufacturer.pk %}">{{ item.manufacturer.name }}</a>{% else %}<span class="muted">—</span>{% endif %}</dd>
+      </dl></div>
+    </div>
+
+    {% if item.features %}
+    <div class="section">
+      <h2>Features</h2>
+      <div class="card table-wrap"><table class="data"><tbody>
+        {% for key, val in item.features.items %}<tr><th>{{ key }}</th><td>{{ val }}</td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+    {% endif %}
+
+    {% if item.pricing %}
+    <div class="section">
+      <h2>Pricing</h2>
+      <div class="card"><dl class="kv">{% for key, val in item.pricing.items %}<dt>{{ key }}</dt><dd>{{ val }}</dd>{% endfor %}</dl></div>
+    </div>
+    {% endif %}
+
+    {% if item.documents.all or item.related_items.all or item.related_to.all %}
+    <div class="section">
+      <h2>Linked records</h2>
+      <div class="card">
+        {% for d in item.documents.all %}<div>📄 <a href="{% url 'search:document_detail' d.pk %}">{{ d.title }}</a></div>{% endfor %}
+        {% for r in item.related_items.all %}<div>📦 <a href="{% url 'search:item_detail' r.pk %}">{{ r.name }}</a> <span class="muted">(related)</span></div>{% endfor %}
+        {% for r in item.related_to.all %}<div>📦 <a href="{% url 'search:item_detail' r.pk %}">{{ r.name }}</a> <span class="muted">(related from)</span></div>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <aside>
+    {% if item.categories.all %}
+    <div class="section">
+      <h2>Categories</h2>
+      <div class="card"><div class="tags">{% for c in item.categories.all %}<span class="tag">{{ c.name }}</span>{% endfor %}</div></div>
+    </div>
+    {% endif %}
+
+    {% if item.identifiers.all %}
+    <div class="section">
+      <h2>Identifiers</h2>
+      <div class="card">{% for i in item.identifiers.all %}<dl class="kv"><dt>{{ i.scheme }}</dt><dd class="mono">{{ i.value }}</dd></dl>{% endfor %}</div>
+    </div>
+    {% endif %}
+
+    {% include "search/_provenance.html" with obj=item %}
+  </aside>
+</div>
+{% endblock %}

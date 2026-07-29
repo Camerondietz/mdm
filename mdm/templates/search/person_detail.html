@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ person.display_name }} · MDM{% endblock %}
+{% block content %}
+
+<div class="breadcrumb"><a href="{% url 'search:home' %}">Search</a> / People</div>
+
+<div class="detail-header">
+  <span class="big-icon">👤</span>
+  <div>
+    <h1>{{ person.display_name }}</h1>
+    <div class="subline">
+      {% for role in person.roles.all %}<span class="tag">{{ role.name }}</span> {% endfor %}
+      {% if not person.roles.all %}<span class="badge">Person</span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a class="muted" href="{% url 'person-jsonld' person.pk %}">JSON-LD ↗</a>
+    <a class="btn" href="{% url 'admin:mdm_person_change' person.pk %}">Edit</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div>
+    <div class="section">
+      <h2>Overview</h2>
+      <div class="card">
+        <dl class="kv">
+          <dt>Full name</dt><dd>{{ person.display_name }}</dd>
+          {% if person.given_name %}<dt>Given</dt><dd>{{ person.given_name }}</dd>{% endif %}
+          {% if person.additional_name %}<dt>Middle</dt><dd>{{ person.additional_name }}</dd>{% endif %}
+          {% if person.family_name %}<dt>Family</dt><dd>{{ person.family_name }}</dd>{% endif %}
+          {% if person.aliases %}<dt>Aliases</dt><dd>{{ person.aliases|join:", " }}</dd>{% endif %}
+          <dt>Date of birth</dt><dd class="{% if not person.birth_date %}empty-val{% endif %}">{{ person.birth_date|default:"—" }}</dd>
+          <dt>Location</dt>
+          <dd>{% if person.primary_location %}<a href="{% url 'search:location_detail' person.primary_location.pk %}">{{ person.primary_location.full_path }}</a>{% else %}<span class="muted">—</span>{% endif %}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Employment &amp; roles</h2>
+      {% if person.employments.all %}
+        <div class="card table-wrap">
+          <table class="data">
+            <thead><tr><th>Organization</th><th>Title</th><th>Department</th><th>Period</th><th>Status</th></tr></thead>
+            <tbody>
+              {% for e in person.employments.all %}
+                <tr>
+                  <td><a href="{% url 'search:organization_detail' e.organization.pk %}">{{ e.organization.name }}</a></td>
+                  <td>{{ e.job_title|default:"—" }}</td>
+                  <td>{% if e.department %}<a href="{% url 'search:department_detail' e.department.pk %}">{{ e.department.name }}</a>{% else %}—{% endif %}</td>
+                  <td class="muted">{{ e.start_date|default:"?" }} – {{ e.end_date|default:"present" }}</td>
+                  <td>{% if e.is_current %}<span class="badge">Current</span>{% else %}<span class="muted">Former</span>{% endif %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}<p class="muted">No employment records.</p>{% endif %}
+    </div>
+
+    {% if person.authored_documents.all %}
+    <div class="section">
+      <h2>Authored documents</h2>
+      <div class="card"><ul class="chip-list">
+        {% for doc in person.authored_documents.all %}<a class="tag" href="{% url 'search:document_detail' doc.pk %}">📄 {{ doc.title }}</a>{% endfor %}
+      </ul></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <aside>
+    <div class="section">
+      <h2>Contact</h2>
+      <div class="card">
+        {% for c in person.contacts.all %}
+          <dl class="kv"><dt>{{ c.get_kind_display }}{% if c.label %} · {{ c.label }}{% endif %}</dt><dd>{{ c.value }}</dd></dl>
+        {% empty %}<p class="muted">No contact points.</p>{% endfor %}
+      </div>
+    </div>
+
+    {% if person.identifiers.all %}
+    <div class="section">
+      <h2>Identifiers</h2>
+      <div class="card">
+        {% for i in person.identifiers.all %}<dl class="kv"><dt>{{ i.scheme }}</dt><dd class="mono">{{ i.value }}</dd></dl>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if person.skills.all %}
+    <div class="section">
+      <h2>Skills</h2>
+      <div class="card"><div class="tags">{% for s in person.skills.all %}<span class="tag">{{ s.name }}</span>{% endfor %}</div></div>
+    </div>
+    {% endif %}
+
+    {% if person.parents.all or person.children.all %}
+    <div class="section">
+      <h2>Family</h2>
+      <div class="card">
+        {% for p in person.parents.all %}<div>↑ <a href="{% url 'search:person_detail' p.pk %}">{{ p.display_name }}</a> <span class="muted">(parent)</span></div>{% endfor %}
+        {% for c in person.children.all %}<div>↓ <a href="{% url 'search:person_detail' c.pk %}">{{ c.display_name }}</a> <span class="muted">(child)</span></div>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% include "search/_provenance.html" with obj=person %}
+  </aside>
+</div>
+{% endblock %}

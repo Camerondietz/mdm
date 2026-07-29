@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ document.title }} · MDM{% endblock %}
+{% block content %}
+
+<div class="breadcrumb"><a href="{% url 'search:home' %}">Search</a> / Documents</div>
+
+<div class="detail-header">
+  <span class="big-icon">📄</span>
+  <div>
+    <h1>{{ document.title }}</h1>
+    <div class="subline">
+      {% if document.doc_type %}<span class="badge">{{ document.doc_type.name }}</span>{% endif %}
+      <span class="muted">{{ document.get_visibility_display }}{% if document.version %} · v{{ document.version }}{% endif %}</span>
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a class="muted" href="{% url 'document-jsonld' document.pk %}">JSON-LD ↗</a>
+    <a class="btn" href="{% url 'admin:mdm_document_change' document.pk %}">Edit</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div>
+    <div class="section">
+      <h2>Overview</h2>
+      <div class="card"><dl class="kv">
+        {% if document.doc_type %}<dt>Type</dt><dd>{{ document.doc_type.name }}</dd>{% endif %}
+        {% if document.version %}<dt>Version</dt><dd>{{ document.version }}</dd>{% endif %}
+        <dt>Location</dt><dd>{% if document.url %}<a href="{{ document.url }}" rel="noopener" target="_blank">{{ document.url }}</a>{% else %}<span class="muted">—</span>{% endif %}</dd>
+        <dt>Visibility</dt><dd>{{ document.get_visibility_display }}</dd>
+        <dt>Owner</dt><dd>{{ document.owner|default:"—" }}</dd>
+      </dl></div>
+    </div>
+
+    {% if document.all_author_names %}
+    <div class="section">
+      <h2>Authors</h2>
+      <div class="card">
+        {% for a in document.authors.all %}<div>👤 <a href="{% url 'search:person_detail' a.pk %}">{{ a.display_name }}</a></div>{% endfor %}
+        {% for name in document.author_names %}<div class="muted">{{ name }}</div>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if document.mentions or document.citations %}
+    <div class="section">
+      <h2>References</h2>
+      <div class="card">
+        {% if document.mentions %}<p class="muted" style="margin-top:0">Mentions</p><ul>{% for m in document.mentions %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}
+        {% if document.citations %}<p class="muted">Citations</p><ul>{% for c in document.citations %}<li>{{ c }}</li>{% endfor %}</ul>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if document.items.all %}
+    <div class="section">
+      <h2>Related items</h2>
+      <div class="card"><div class="tags">{% for it in document.items.all %}<a class="tag" href="{% url 'search:item_detail' it.pk %}">📦 {{ it.name }}</a>{% endfor %}</div></div>
+    </div>
+    {% endif %}
+  </div>
+
+  <aside>
+    {% if document.topics.all %}
+    <div class="section">
+      <h2>Topics</h2>
+      <div class="card"><div class="tags">{% for t in document.topics.all %}<span class="tag">{{ t.name }}</span>{% endfor %}</div></div>
+    </div>
+    {% endif %}
+
+    {% if document.identifiers.all %}
+    <div class="section">
+      <h2>Identifiers</h2>
+      <div class="card">{% for i in document.identifiers.all %}<dl class="kv"><dt>{{ i.scheme }}</dt><dd class="mono">{{ i.value }}</dd></dl>{% endfor %}</div>
+    </div>
+    {% endif %}
+
+    {% if document.embedding_model %}
+    <div class="section">
+      <h2>AI</h2>
+      <div class="card"><dl class="kv"><dt>Embedding</dt><dd>{{ document.embedding_model }}{% if document.embedding %} <span class="badge">indexed</span>{% endif %}</dd></dl></div>
+    </div>
+    {% endif %}
+
+    {% include "search/_provenance.html" with obj=document %}
+  </aside>
+</div>
+{% endblock %}

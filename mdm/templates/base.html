@@ -1,0 +1,43 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}MDM{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'mdm/css/mdm.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="{% url 'search:home' %}">◆ MDM</a>
+      <nav class="nav">
+        <a href="{% url 'search:home' %}">Search</a>
+        <a href="/admin/">Admin</a>
+        <a href="/api/">API</a>
+        {% if user.is_authenticated %}
+          <span class="user">{{ user.get_username }}</span>
+          <form class="logout-form" method="post" action="{% url 'logout' %}">
+            {% csrf_token %}<button type="submit" class="linkbtn">Log out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}">Log in</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}<li class="{{ message.tags }}">{{ message }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">MDM · Master Data Management — unified data across your businesses and personal life.</div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ employment.job_title|default:"Employment" }} · {{ employment.organization.name }} · MDM{% endblock %}
+{% block content %}
+
+<div class="breadcrumb"><a href="{% url 'search:home' %}">Search</a> / Employment</div>
+
+<div class="detail-header">
+  <span class="big-icon">💼</span>
+  <div>
+    <h1>{{ employment.job_title|default:"Role" }}</h1>
+    <div class="subline">
+      <a href="{% url 'search:person_detail' employment.person.pk %}">{{ employment.person.display_name }}</a>
+      <span class="muted">@</span>
+      <a href="{% url 'search:organization_detail' employment.organization.pk %}">{{ employment.organization.name }}</a>
+      {% if employment.is_current %}<span class="badge">Current</span>{% else %}<span class="muted">Former</span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a class="muted" href="{% url 'employment-jsonld' employment.pk %}">JSON-LD ↗</a>
+    <a class="btn" href="{% url 'admin:mdm_employment_change' employment.pk %}">Edit</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div>
+    <div class="section">
+      <h2>Details</h2>
+      <div class="card"><dl class="kv">
+        <dt>Person</dt><dd><a href="{% url 'search:person_detail' employment.person.pk %}">{{ employment.person.display_name }}</a></dd>
+        <dt>Organization</dt><dd><a href="{% url 'search:organization_detail' employment.organization.pk %}">{{ employment.organization.name }}</a></dd>
+        <dt>Department</dt><dd>{% if employment.department %}<a href="{% url 'search:department_detail' employment.department.pk %}">{{ employment.department.name }}</a>{% else %}<span class="muted">—</span>{% endif %}</dd>
+        <dt>Title</dt><dd>{{ employment.job_title|default:"—" }}</dd>
+        {% if employment.employment_type %}<dt>Type</dt><dd>{{ employment.employment_type.name }}</dd>{% endif %}
+        <dt>Manager</dt><dd>{% if employment.manager %}<a href="{% url 'search:employment_detail' employment.manager.pk %}">{{ employment.manager.person.display_name }}</a>{% else %}<span class="muted">—</span>{% endif %}</dd>
+        <dt>Period</dt><dd class="muted">{{ employment.start_date|default:"?" }} – {{ employment.end_date|default:"present" }}</dd>
+      </dl></div>
+    </div>
+
+    {% if employment.reports.all %}
+    <div class="section">
+      <h2>Direct reports</h2>
+      <div class="card">{% for r in employment.reports.all %}<div>💼 <a href="{% url 'search:employment_detail' r.pk %}">{{ r.person.display_name }}</a> <span class="muted">— {{ r.job_title }}</span></div>{% endfor %}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <aside>
+    <div class="section">
+      <h2>Business contact</h2>
+      <div class="card"><dl class="kv">
+        <dt>Work email</dt><dd>{{ employment.work_email|default:"—" }}</dd>
+        <dt>Extension</dt><dd>{{ employment.extension|default:"—" }}</dd>
+        <dt>Office</dt><dd>{{ employment.office|default:"—" }}{% if employment.office_location %} · <a href="{% url 'search:location_detail' employment.office_location.pk %}">{{ employment.office_location.name }}</a>{% endif %}</dd>
+      </dl></div>
+    </div>
+    {% include "search/_provenance.html" with obj=employment %}
+  </aside>
+</div>
+{% endblock %}

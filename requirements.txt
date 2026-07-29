@@ -1,0 +1,21 @@
+# ── Core framework ────────────────────────────────────────────────────────────
+Django>=5.1,<5.3
+
+# ── Database driver (psycopg 3) ───────────────────────────────────────────────
+psycopg[binary]>=3.2,<4.0
+
+# ── REST API ──────────────────────────────────────────────────────────────────
+djangorestframework>=3.15,<3.17
+django-filter>=24.3
+django-cors-headers>=4.4
+
+# ── Configuration (12-factor env vars) ────────────────────────────────────────
+django-environ>=0.11,<0.13
+
+# ── Static files + production server ──────────────────────────────────────────
+whitenoise>=6.7
+gunicorn>=22.0            # Linux/Docker only (unused on Windows dev)
+
+# ── Future scale-up (documented, not required today) ──────────────────────────
+# pgvector>=0.3          # enable when moving embeddings from JSONField -> pgvector
+# opensearch-py>=2.6     # enable when moving search from Postgres FTS -> OpenSearch

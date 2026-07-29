@@ -1,0 +1,38 @@
+# Two-container stack: PostgreSQL + the Django app (Gunicorn, static via WhiteNoise).
+# Dev on Windows:  docker compose up -d db      (just Postgres; run Django via runserver)
+# Deploy on the Pi: docker compose up -d --build (full stack)
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mdm}
+      POSTGRES_USER: ${POSTGRES_USER:-mdm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mdm}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"   # published so a host-side `runserver` can reach it in dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mdm} -d ${POSTGRES_DB:-mdm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # DB name/user/password/port come from .env (env_file above); only the host
+      # differs inside the network — point the app at the `db` service, not localhost.
+      POSTGRES_HOST: db
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+volumes:
+  pgdata:

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ location.name }} · MDM{% endblock %}
+{% block content %}
+
+<div class="breadcrumb"><a href="{% url 'search:home' %}">Search</a> / Locations</div>
+
+<div class="detail-header">
+  <span class="big-icon">📍</span>
+  <div>
+    <h1>{{ location.name }}</h1>
+    <div class="subline">
+      <span class="badge">{{ location.get_kind_display }}</span>
+      {% if location.parent %}<span class="muted">· in <a href="{% url 'search:location_detail' location.parent.pk %}">{{ location.parent.full_path }}</a></span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a class="muted" href="{% url 'location-jsonld' location.pk %}">JSON-LD ↗</a>
+    <a class="btn" href="{% url 'admin:mdm_location_change' location.pk %}">Edit</a>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div>
+    <div class="section">
+      <h2>Overview</h2>
+      <div class="card"><dl class="kv">
+        <dt>Kind</dt><dd>{{ location.get_kind_display }}</dd>
+        {% if location.one_line_address %}<dt>Address</dt><dd>{{ location.one_line_address }}</dd>{% endif %}
+        {% if location.country_code %}<dt>Country</dt><dd>{{ location.country_code }}</dd>{% endif %}
+        {% if location.code %}<dt>Code</dt><dd class="mono">{{ location.code }}</dd>{% endif %}
+        {% if location.latitude and location.longitude %}
+          <dt>Coordinates</dt>
+          <dd class="mono">{{ location.latitude }}, {{ location.longitude }}
+            <a class="muted" rel="noopener" target="_blank" href="https://www.openstreetmap.org/?mlat={{ location.latitude }}&amp;mlon={{ location.longitude }}#map=15/{{ location.latitude }}/{{ location.longitude }}">map ↗</a>
+          </dd>
+        {% endif %}
+      </dl></div>
+    </div>
+
+    {% if location.children.all %}
+    <div class="section">
+      <h2>Contained places</h2>
+      <div class="card">{% for c in location.children.all %}<div>📍 <a href="{% url 'search:location_detail' c.pk %}">{{ c.name }}</a> <span class="muted">({{ c.get_kind_display }})</span></div>{% endfor %}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <aside>
+    {% if location.headquartered_organizations.all or location.located_organizations.all %}
+    <div class="section">
+      <h2>Organizations</h2>
+      <div class="card">
+        {% for o in location.headquartered_organizations.all %}<div>🏢 <a href="{% url 'search:organization_detail' o.pk %}">{{ o.name }}</a> <span class="muted">(HQ)</span></div>{% endfor %}
+        {% for o in location.located_organizations.all %}<div>🏢 <a href="{% url 'search:organization_detail' o.pk %}">{{ o.name }}</a></div>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if location.residents.all %}
+    <div class="section">
+      <h2>People</h2>
+      <div class="card">{% for p in location.residents.all %}<div>👤 <a href="{% url 'search:person_detail' p.pk %}">{{ p.display_name }}</a></div>{% endfor %}</div>
+    </div>
+    {% endif %}
+
+    {% if location.identifiers.all %}
+    <div class="section">
+      <h2>Identifiers</h2>
+      <div class="card">{% for i in location.identifiers.all %}<dl class="kv"><dt>{{ i.scheme }}</dt><dd class="mono">{{ i.value }}</dd></dl>{% endfor %}</div>
+    </div>
+    {% endif %}
+
+    {% include "search/_provenance.html" with obj=location %}
+  </aside>
+</div>
+{% endblock %}

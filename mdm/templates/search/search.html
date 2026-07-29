@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Search · MDM{% endblock %}
+{% block content %}
+
+<form class="searchbar" method="get" action="{% url 'search:home' %}">
+  <input type="search" name="q" value="{{ q }}"
+         placeholder="Search people, organizations, departments, items, documents, locations…" autofocus>
+  <input type="hidden" name="sort" value="{{ sort }}">
+  {% for t in selected_types %}<input type="hidden" name="type" value="{{ t }}">{% endfor %}
+  <button class="btn" type="submit">Search</button>
+</form>
+
+<div class="filters">
+  <div class="chips">
+    <a class="chip {% if not selected_types %}active{% endif %}" href="?q={{ q|urlencode }}&amp;sort={{ sort }}">All</a>
+    {% for f in type_facets %}
+      <a class="chip {% if f.key in selected_types %}active{% endif %}"
+         href="?q={{ q|urlencode }}&amp;type={{ f.key }}&amp;sort={{ sort }}">
+        <span>{{ f.icon }}</span> {{ f.label }} <span class="count">{{ f.count }}</span>
+      </a>
+    {% endfor %}
+  </div>
+  <div class="sort">
+    <span>Sort:</span>
+    <a class="{% if sort == 'relevance' %}active{% endif %}" href="?q={{ q|urlencode }}{% for t in selected_types %}&amp;type={{ t }}{% endfor %}&amp;sort=relevance">Relevance</a>
+    <a class="{% if sort == 'name' %}active{% endif %}" href="?q={{ q|urlencode }}{% for t in selected_types %}&amp;type={{ t }}{% endfor %}&amp;sort=name">Name</a>
+    <a class="{% if sort == 'updated' %}active{% endif %}" href="?q={{ q|urlencode }}{% for t in selected_types %}&amp;type={{ t }}{% endfor %}&amp;sort=updated">Newest</a>
+    <a class="{% if sort == 'oldest' %}active{% endif %}" href="?q={{ q|urlencode }}{% for t in selected_types %}&amp;type={{ t }}{% endfor %}&amp;sort=oldest">Oldest</a>
+  </div>
+</div>
+
+<p class="result-meta">
+  {{ total_results }} result{{ total_results|pluralize }}{% if q %} for &ldquo;{{ q }}&rdquo;{% endif %}
+</p>
+
+<ul class="results">
+  {% for r in page_obj %}
+    <li class="result">
+      <a class="result-link" href="{{ r.url }}">
+        <span class="result-icon">{{ r.icon }}</span>
+        <span class="result-body">
+          <span class="result-title">{{ r.title }}</span>
+          {% if r.subtitle %}<span class="result-sub">{{ r.subtitle }}</span>{% endif %}
+        </span>
+        <span class="result-type">{{ r.label }}</span>
+      </a>
+    </li>
+  {% empty %}
+    <li class="empty">
+      {% if q %}No matches for &ldquo;{{ q }}&rdquo;. Try different keywords or clear the type filter.
+      {% else %}Nothing here yet. Add records in the <a href="/admin/">admin</a>, then search.{% endif %}
+    </li>
+  {% endfor %}
+</ul>
+
+{% if page_obj.has_other_pages %}
+  <nav class="pagination">
+    {% if page_obj.has_previous %}
+      <a href="?{{ base_qs }}&amp;page={{ page_obj.previous_page_number }}">← Previous</a>
+    {% endif %}
+    <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?{{ base_qs }}&amp;page={{ page_obj.next_page_number }}">Next →</a>
+    {% endif %}
+  </nav>
+{% endif %}
+
+{% endblock %}

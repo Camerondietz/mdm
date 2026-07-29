@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}{{ organization.name }} · MDM{% endblock %}
+{% block content %}
+
+<div class="breadcrumb"><a href="{% url 'search:home' %}">Search</a> / Organizations</div>
+
+<div class="detail-header">
+  <span class="big-icon">🏢</span>
+  <div>
+    <h1>{{ organization.name }}</h1>
+    <div class="subline">
+      {% if organization.org_type %}<span class="badge">{{ organization.org_type.name }}</span>{% endif %}
+      {% if organization.legal_name %}<span class="muted">{{ organization.legal_name }}</span>{% endif %}
+      {% if organization.parent %}<span class="muted">· subsidiary of <a href="{% url 'search:organization_detail' organization.parent.pk %}">{{ organization.parent.name }}</a></span>{% endif %}
+    </div>
+  </div>
+  <div class="detail-actions">
+    <a class="muted" href="{% url 'organization-jsonld' organization.pk %}">JSON-LD ↗</a>
+    <a class="btn" href="{% url 'admin:mdm_organization_change' organization.pk %}">Edit</a>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="stat"><span class="num">{{ departments|length }}</span><span class="lbl">Departments</span></div>
+  <div class="stat"><span class="num">{{ current_employments|length }}</span><span class="lbl">Current employees</span></div>
+  <div class="stat"><span class="num">{{ organization.subsidiaries.all|length }}</span><span class="lbl">Subsidiaries</span></div>
+</div>
+
+<div class="grid-2">
+  <div>
+    <div class="section">
+      <h2>Overview</h2>
+      <div class="card">
+        <dl class="kv">
+          {% if organization.legal_name %}<dt>Legal name</dt><dd>{{ organization.legal_name }}</dd>{% endif %}
+          {% if organization.org_type %}<dt>Type</dt><dd>{{ organization.org_type.name }}</dd>{% endif %}
+          <dt>Website</dt><dd>{% if organization.website %}<a href="{{ organization.website }}" rel="noopener" target="_blank">{{ organization.website }}</a>{% else %}<span class="muted">—</span>{% endif %}</dd>
+          <dt>Headquarters</dt><dd>{% if organization.primary_location %}<a href="{% url 'search:location_detail' organization.primary_location.pk %}">{{ organization.primary_location.full_path }}</a>{% else %}<span class="muted">—</span>{% endif %}</dd>
+          {% if organization.domains %}<dt>Domains</dt><dd class="mono">{{ organization.domains|join:", " }}</dd>{% endif %}
+          {% if organization.ownership %}<dt>Ownership</dt><dd>{% for owner, pct in organization.ownership.items %}{{ owner }}: {{ pct }}%{% if not forloop.last %} · {% endif %}{% endfor %}</dd>{% endif %}
+        </dl>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Departments &amp; employees</h2>
+      {% for row in departments %}
+        <div class="dept-block">
+          <div class="dept-head">
+            <h3>🗂️ <a href="{% url 'search:department_detail' row.department.pk %}">{{ row.department.name }}</a></h3>
+            <span class="muted">{{ row.employees|length }} employee{{ row.employees|length|pluralize }}</span>
+          </div>
+          <div class="dept-body">
+            {% if row.employees %}
+              <div class="table-wrap"><table class="data">
+                <tbody>
+                  {% for e in row.employees %}
+                    <tr>
+                      <td><a href="{% url 'search:person_detail' e.person.pk %}">{{ e.person.display_name }}</a></td>
+                      <td>{{ e.job_title|default:"—" }}</td>
+                      <td>{% if e.is_current %}<span class="badge">Current</span>{% else %}<span class="muted">Former</span>{% endif %}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table></div>
+            {% else %}<p class="muted">No employees recorded.</p>{% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <p class="muted">No departments yet.</p>
+      {% endfor %}
+
+      {% if unassigned_employees %}
+        <div class="dept-block">
+          <div class="dept-head"><h3>Unassigned</h3><span class="muted">{{ unassigned_employees|length }}</span></div>
+          <div class="dept-body"><div class="table-wrap"><table class="data"><tbody>
+            {% for e in unassigned_employees %}
+              <tr>
+                <td><a href="{% url 'search:person_detail' e.person.pk %}">{{ e.person.display_name }}</a></td>
+                <td>{{ e.job_title|default:"—" }}</td>
+                <td>{% if e.is_current %}<span class="badge">Current</span>{% else %}<span class="muted">Former</span>{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody></table></div></div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <aside>
+    <div class="section">
+      <h2>Contact</h2>
+      <div class="card">
+        {% for c in organization.contacts.all %}
+          <dl class="kv"><dt>{{ c.get_kind_display }}{% if c.label %} · {{ c.label }}{% endif %}</dt><dd>{{ c.value }}</dd></dl>
+        {% empty %}<p class="muted">No contact points.</p>{% endfor %}
+      </div>
+    </div>
+
+    {% if organization.identifiers.all %}
+    <div class="section">
+      <h2>Identifiers</h2>
+      <div class="card">{% for i in organization.identifiers.all %}<dl class="kv"><dt>{{ i.scheme }}</dt><dd class="mono">{{ i.value }}</dd></dl>{% endfor %}</div>
+    </div>
+    {% endif %}
+
+    {% if organization.locations.all %}
+    <div class="section">
+      <h2>Locations</h2>
+      <div class="card">{% for loc in organization.locations.all %}<div>📍 <a href="{% url 'search:location_detail' loc.pk %}">{{ loc.full_path }}</a></div>{% endfor %}</div>
+    </div>
+    {% endif %}
+
+    {% if organization.subsidiaries.all %}
+    <div class="section">
+      <h2>Subsidiaries</h2>
+      <div class="card">{% for sub in organization.subsidiaries.all %}<div>🏢 <a href="{% url 'search:organization_detail' sub.pk %}">{{ sub.name }}</a></div>{% endfor %}</div>
+    </div>
+    {% endif %}
+
+    {% if organization.manufactured_items.all %}
+    <div class="section">
+      <h2>Products</h2>
+      <div class="card"><div class="tags">{% for it in organization.manufactured_items.all %}<a class="tag" href="{% url 'search:item_detail' it.pk %}">📦 {{ it.name }}</a>{% endfor %}</div></div>
+    </div>
+    {% endif %}
+
+    {% include "search/_provenance.html" with obj=organization %}
+  </aside>
+</div>
+{% endblock %}

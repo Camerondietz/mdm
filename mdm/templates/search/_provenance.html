@@ -1,0 +1,13 @@
+<div class="section">
+  <h2>Record</h2>
+  <div class="card">
+    <dl class="kv">
+      {% if obj.source_system %}<dt>Source system</dt><dd>{{ obj.source_system }}</dd>{% endif %}
+      {% if obj.source_record_id %}<dt>Source ID</dt><dd class="mono">{{ obj.source_record_id }}</dd>{% endif %}
+      <dt>Updated</dt><dd class="muted">{{ obj.updated_at }}</dd>
+      <dt>Created</dt><dd class="muted">{{ obj.created_at }}</dd>
+      <dt>UUID</dt><dd class="mono">{{ obj.id }}</dd>
+      <dt>URI (@id)</dt><dd class="mono">{{ obj.get_uri }}</dd>
+    </dl>
+  </div>
+</div>
